@@ -111,3 +111,57 @@ def get_user_id_by_username(username: str) -> Optional[str]:
             username=username,
         ).single()
     return result["userId"] if result else None
+
+def search_users(search_text: str):
+    with driver.session() as session:
+        result = session.run(
+            """
+            MATCH (u:User)
+            WHERE toLower(u.name) CONTAINS toLower($searchText)
+               OR toLower(u.username) CONTAINS toLower($searchText)
+            RETURN u.userId AS userId,
+                   u.name AS name,
+                   u.username AS username,
+                   u.email AS email
+            ORDER BY u.username
+            LIMIT 20
+            """,
+            searchText=search_text,
+        )
+
+        return [
+            {
+                "userId": row["userId"],
+                "name": row["name"],
+                "username": row["username"],
+                "email": row["email"],
+            }
+            for row in result
+        ]
+
+
+def get_popular_users(limit: int = 10):
+    with driver.session() as session:
+        result = session.run(
+            """
+            MATCH (u:User)
+            OPTIONAL MATCH (follower:User)-[:FOLLOWS]->(u)
+            RETURN u.userId AS userId,
+                   u.name AS name,
+                   u.username AS username,
+                   count(follower) AS followerCount
+            ORDER BY followerCount DESC, u.username ASC
+            LIMIT $limit
+            """,
+            limit=limit,
+        )
+
+        return [
+            {
+                "userId": row["userId"],
+                "name": row["name"],
+                "username": row["username"],
+                "followerCount": row["followerCount"],
+            }
+            for row in result
+        ]
