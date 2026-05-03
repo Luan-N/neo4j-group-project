@@ -70,3 +70,44 @@ def update_profile(user_id: str, name: Optional[str] = None, email: Optional[str
     with driver.session() as session:
         session.run(f"MATCH (u:User {{userId: $userId}}) SET {set_clause}", **params)
     return get_profile(user_id)
+
+def follow(follower_id: str, followed_username: str) -> bool:
+    followed_id = get_user_id_by_username(followed_username)
+    if follower_id == followed_id:
+        return False
+    
+    with driver.session() as session:
+        result = session.run(
+            """
+            MATCH (a:User {userId: $followerId}), (b:User {userId: $followedId})
+            MERGE (a)-[relationship:FOLLOWS]->(b)
+            RETURN COUNT(relationship) > 0 AS followed
+            """,
+            followerId=follower_id, followedId=followed_id,
+        ).single()
+        
+    return result["followed"] > 0
+
+def unfollow(follower_id: str, followed_username: str) -> bool:
+    followed_id = get_user_id_by_username(followed_username)
+    if follower_id == followed_id:
+        return False
+    
+    with driver.session() as session:
+        result = session.run(
+            """
+            MATCH (a:User {userId: $followerId})-[relationship:FOLLOWS]->(b:User {userId: $followedId})
+            DELETE relationship
+            RETURN COUNT(relationship) = 0 AS unfollowed
+            """,
+            followerId=follower_id, followedId=followed_id,
+        ).single()
+    return result["unfollowed"] > 0
+
+def get_user_id_by_username(username: str) -> Optional[str]:
+    with driver.session() as session:
+        result = session.run(
+            "MATCH (u:User {username: $username}) RETURN u.userId AS userId",
+            username=username,
+        ).single()
+    return result["userId"] if result else None

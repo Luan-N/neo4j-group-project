@@ -1,4 +1,4 @@
-from auth import register, login, get_profile, update_profile
+from auth import register, login, get_profile, update_profile, follow, unfollow
 
 
 def prompt(prompt_text: str) -> str:
@@ -60,6 +60,24 @@ def main():
             print("Updated:", updated)
             current_user["username"] = updated["username"]
             current_user["name"] = updated["name"]
+        elif cmd == "follow":
+            if not current_user:
+                print("Please login first.")
+                continue
+            target_id = prompt("Follow user (Enter username): ")
+            if follow(current_user["userId"], target_id):
+                print("Now following", target_id)
+            else:
+                print("Failed to follow. Check username.")
+        elif cmd == "unfollow":
+            if not current_user:
+                print("Please login first.")
+                continue
+            target_id = prompt("Unfollow user (Enter username): ")
+            if unfollow(current_user["userId"], target_id):
+                print("Unfollowed", target_id)
+            else:
+                print("Failed to unfollow. Check username.")
 
         elif cmd == "quit":
             print("Bye")
