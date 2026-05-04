@@ -1,4 +1,5 @@
-from auth import register, login, get_profile, update_profile, follow, unfollow, search_users, get_popular_users
+from auth import register, login, get_profile, update_profile, follow, unfollow, get_following, get_followers, get_mutual_connections, get_recommendations, search_users, get_popular_users
+
 
 def prompt(prompt_text: str) -> str:
     return input(prompt_text).strip()
@@ -98,6 +99,55 @@ def main():
                 print("\nPopular Users:")
                 for user in users:
                     print(f"- {user['name']} (@{user['username']}) | Followers: {user['followerCount']}")
+        elif cmd == "following":
+            if not current_user:
+                print("Please login first.")
+                continue
+            users = get_following(current_user["userId"])
+            if users:
+                print(f"You are following ({len(users)}):")
+                for u in users:
+                    print(f"  @{u['username']} — {u['name']}")
+            else:
+                print("You are not following anyone.")
+
+        elif cmd == "followers":
+            if not current_user:
+                print("Please login first.")
+                continue
+            users = get_followers(current_user["userId"])
+            if users:
+                print(f"Your followers ({len(users)}):")
+                for u in users:
+                    print(f"  @{u['username']} — {u['name']}")
+            else:
+                print("You have no followers yet.")
+
+        elif cmd == "mutual":
+            if not current_user:
+                print("Please login first.")
+                continue
+            target = prompt("Check mutual connections with (username): ")
+            users = get_mutual_connections(current_user["userId"], target)
+            if users:
+                print(f"Mutual connections with @{target} ({len(users)}):")
+                for u in users:
+                    print(f"  @{u['username']} — {u['name']}")
+            else:
+                print(f"No mutual connections with @{target}.")
+
+        elif cmd == "recommend":
+            if not current_user:
+                print("Please login first.")
+                continue
+            users = get_recommendations(current_user["userId"])
+            if users:
+                print("People you may want to follow:")
+                for u in users:
+                    print(f"  @{u['username']} — {u['name']} ({u['commonConnections']} common connection(s))")
+            else:
+                print("No recommendations available yet.")
+
         elif cmd == "quit":
             print("Bye")
             break
