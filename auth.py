@@ -111,3 +111,50 @@ def get_user_id_by_username(username: str) -> Optional[str]:
             username=username,
         ).single()
     return result["userId"] if result else None
+
+
+def get_following(user_id: str) -> list:
+    with driver.session() as session:
+        result = session.run(
+            """MATCH (u:User {userId: $userId})-[:FOLLOWS]->(f:User)
+            RETURN f.username AS username, f.name AS name""",
+            userId=user_id,
+        )
+        return [{"username": r["username"], "name": r["name"]} for r in result]
+
+
+def get_followers(user_id: str) -> list:
+    with driver.session() as session:
+        result = session.run(
+            """MATCH (f:User)-[:FOLLOWS]->(u:User {userId: $userId})
+            RETURN f.username AS username, f.name AS name""",
+            userId=user_id,
+        )
+        return [{"username": r["username"], "name": r["name"]} for r in result]
+
+
+def get_mutual_connections(user_id: str, target_username: str) -> list:
+    target_id = get_user_id_by_username(target_username)
+    if not target_id:
+        return []
+    with driver.session() as session:
+        result = session.run(
+            """MATCH (a:User {userId: $userId})-[:FOLLOWS]->(m:User)<-[:FOLLOWS]-(b:User {userId: $targetId})
+            RETURN m.username AS username, m.name AS name""",
+            userId=user_id, targetId=target_id,
+        )
+        return [{"username": r["username"], "name": r["name"]} for r in result]
+
+
+def get_recommendations(user_id: str) -> list:
+    with driver.session() as session:
+        result = session.run(
+            """MATCH (me:User {userId: $userId})-[:FOLLOWS]->(a:User)-[:FOLLOWS]->(rec:User)
+            WHERE rec.userId <> $userId
+              AND NOT (me)-[:FOLLOWS]->(rec)
+            RETURN rec.username AS username, rec.name AS name, COUNT(a) AS commonCount
+            ORDER BY commonCount DESC
+            LIMIT 10""",
+            userId=user_id,
+        )
+        return [{"username": r["username"], "name": r["name"], "commonConnections": r["commonCount"]} for r in result]
