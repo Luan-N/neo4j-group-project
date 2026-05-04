@@ -1,4 +1,4 @@
-from auth import register, login, get_profile, update_profile, follow, unfollow, get_following, get_followers, get_mutual_connections, get_recommendations
+from auth import register, login, get_profile, update_profile, follow, unfollow, get_following, get_followers, get_mutual_connections, get_recommendations, search_users, get_popular_users
 
 
 def prompt(prompt_text: str) -> str:
@@ -78,7 +78,27 @@ def main():
                 print("Unfollowed", target_id)
             else:
                 print("Failed to unfollow. Check username.")
+    
+        elif cmd == "search":
+            search_text = prompt("Search by name or username: ")
+            results = search_users(search_text)
 
+            if not results:
+                print("No users found.")
+            else:
+                print("\nSearch Results:")
+                for user in results:
+                    print(f"- {user['name']} (@{user['username']}) | Email: {user['email']}")
+
+        elif cmd == "popular":
+            users = get_popular_users()
+
+            if not users:
+                print("No users found.")
+            else:
+                print("\nPopular Users:")
+                for user in users:
+                    print(f"- {user['name']} (@{user['username']}) | Followers: {user['followerCount']}")
         elif cmd == "following":
             if not current_user:
                 print("Please login first.")
